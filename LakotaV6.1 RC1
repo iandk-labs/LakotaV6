@@ -1,6 +1,5 @@
 """
 LAKOTA V6.1 RC1  IandK Labs
-Fixes:
 - Persistence now saves spectrum + phase + last_seen
 - No hardcoded "discovering" template
 - Spectrum updates per-dimension with different freqs
@@ -9,7 +8,6 @@ Fixes:
 - Tokenization with regex
 - Seeded RNG for reproducibility
 """
-
 import hashlib, json, re, time, os
 import numpy as np
 
@@ -23,34 +21,23 @@ class Lakota:
         self.last_interaction = time.time()
         self.base_freqs = np.linspace(0.5, 8.0, 64) + self.rng.normal(0, 0.1, 64)
         self._load()
-
     def _hash_xyz(self, word):
         h = hashlib.sha256(word.encode('utf-8')).hexdigest()
         x = int(h[0:8], 16) % 1000 / 1000.0
         y = int(h[8:16], 16) % 1000 / 1000.0
         z = int(h[16:24], 16) % 1000 / 1000.0
         return np.array([x, y, z], dtype=np.float64)
-
     def _tokenize(self, text):
         return re.findall(r"\b[\w']+\b", text.lower(), flags=re.UNICODE)
-
     def _wave_pulse(self, pos, freqs):
         return np.sin(pos * freqs) * np.exp(-pos * 0.05)
-
     def learn(self, text):
         words = self._tokenize(text)
         if not words: return
         now = time.time()
         for i, w in enumerate(words):
             if w not in self.vocab:
-                self.vocab[w] = {
-                    "spectrum": self.rng.normal(0, 0.1, 64),
-                    "xyz": self._hash_xyz(w),
-                    "mass": 0.1,
-                    "phase": float(self.rng.random()),
-                    "count": 0,
-                    "last_seen": now
-                }
+                self.vocab[w] = {"spectrum": self.rng.normal(0, 0.1, 64), "xyz": self._hash_xyz(w), "mass": 0.1, "phase": float(self.rng.random()), "count": 0, "last_seen": now}
             e = self.vocab[w]
             e["spectrum"] += self._wave_pulse(i, self.base_freqs) * 0.05
             window = words[max(0,i-2): min(len(words), i+3)]
@@ -71,7 +58,6 @@ class Lakota:
         self.vital_pressure = min(10.0, self.vital_pressure + len(words)*0.05)
         self.last_interaction = now
         self._save()
-
     def express(self, prompt=""):
         self.last_interaction = time.time()
         if not self.vocab: return "..."
@@ -87,13 +73,12 @@ class Lakota:
             s = 0.0
             for pw in p_words:
                 if pw not in self.vocab: continue
-                phase_diff = abs(data["phase"] - self.vocab[pw]["phase"])
-                coherence = np.cos(phase_diff * 2 * np.pi)
+                pd = abs(data["phase"] - self.vocab[pw]["phase"])
+                coherence = np.cos(pd * 2 * np.pi)
                 dist = float(np.linalg.norm(data["xyz"] - self.vocab[pw]["xyz"]))
                 s += coherence / (1.0 + dist)
-            if self.echo_memory:
-                recent = [x for x in self.echo_memory[-100:] if x["word"] == w]
-                s += 0.1 * len(recent)
+            recent = [x for x in self.echo_memory[-100:] if x["word"] == w]
+            s += 0.1 * len(recent)
             scores[w] = s + data["mass"]*0.05
         best = sorted(scores.items(), key=lambda x: x[1], reverse=True)[0][0]
         self.vital_pressure = max(0, self.vital_pressure - 0.2)
@@ -110,7 +95,6 @@ class Lakota:
                 json.dump({"vocab": ser, "vital_pressure": self.vital_pressure, "echo": echo_ser}, f)
         except Exception as ex:
             print("[SAVE ERROR]", ex)
-   
     def _load(self):
         if not os.path.exists(self.state_path): return
         try:
@@ -120,10 +104,23 @@ class Lakota:
                 self.vocab[k] = {"spectrum": np.array(v["spectrum"]), "xyz": np.array(v["xyz"]), "mass": v["mass"], "phase": v["phase"], "count": v["count"], "last_seen": v["last_seen"]}
             self.vital_pressure = data.get("vital_pressure", 0.0)
         except Exception as ex:
-            print("[LOAD ERROR]", ex)
+            print("[LOAD ERROR] Deleting corrupted state")
+            try: os.remove(self.state_path)
+            except: pass
             self.vocab = {}
 
+# --- CHAT INTEGRADO ---
 if __name__ == "__main__":
     lak = Lakota()
-    lak.learn("I like cats and cats like me")
-    print(lak.express("cats"))
+    if len(lak.vocab) == 0:
+        lak.learn("I am Lakota I love to learn and discover")
+    print("=== LAKOTA V6.1 CHAT ===")
+    print("Type ENTER for spontaneous. Type exit to quit.")
+    while True:
+        txt = input("YOU > ")
+        if txt.lower() == "exit": break
+        if txt.strip() == "":
+            print("LAKOTA >", lak.express(""))
+        else:
+            lak.learn(txt)
+            print("LAKOTA >", lak.express(txt))
