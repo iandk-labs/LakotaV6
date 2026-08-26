@@ -1,5 +1,4 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22112265.svg)](https://doi.org/10.5281/zenodo.22112265)
-
 # LakotaV6
 Archived at CERN Zenodo: https://doi.org/10.5281/zenodo.22112265
 # LakotaV6 Hybrid
