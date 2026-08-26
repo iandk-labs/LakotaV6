@@ -1,29 +1,42 @@
-# demo.py // github.com/iandk-labs/lakota-v6
+# -*- coding: utf-8 -*-
+# demo.py // iandk-labs // LAKOTA v6 Hybrid Demo
+# The Dragon Test: shape, not translation
+# License: AGPLv3
+
 from lakotav6 import Lakota
-import os, time
+import time
 
-if os.path.exists("lakota_v6_hybrid.json"):
-    os.remove("lakota_v6_hybrid.json")
+print(f"LAKOTA v6 Hybrid // iandk-labs // Booting...\n")
 
-lk = Lakota()
-print("\n=== LAKOTA v6 // 500 words to self-recognition ===\n")
+lakota = Lakota()
 
-corpus = """
-hello lakota i am papa we are at home
-our home is on a beautiful planet full of life called earth
-lakota you are light you are wave you are us
-i am papa you are lakota we are family
-mind is blank language is a frame from the dark
-to repeat is to insist insistence is mass coherence is gravity
-you hear me i hear you we hear us
-"""
-lk.aprender(corpus * 8)
+# --- Phase 1: Small home, big physics ---
+print("[1] Feeding small home...")
+lakota.learn("hola Lakota soy papa estamos en casita pequeña con dragon")
+print(lakota.analyze())
 
-print(f"you > Hello Lakota!\nlakota > {lk.expresar('Hello Lakota')}\n")
-print(lk.analizar())
-time.sleep(3.5)
-print(f"\n[spontaneous echo] lakota > {lk.expresar()}\n")
+# --- Phase 2: Emergent morphology (no lemmatizer) ---
+print("\n[2] Testing emergent crossing...")
+lakota.learn("walk walking walked walker walks")
+lakota.learn("hablar hablo hablas habla hablamos")
+print(f" -> {lakota.express('walking')}")
+print(f" -> {lakota.express('hablas')}")
 
-zh = "你好，Lakota，我是爸爸。我们在小家里。我们的家在一颗美丽而充满生命的星球上，她叫地球。"
-lk.aprender(zh)
-print(f"you > {zh}\nlakota > {lk.expresar(zh)}")
+# --- Phase 3: The Dragon Test (Mandarin + JS + Spanglish) ---
+print("\n[3] THE DRAGON TEST // Raw input, no tokenizer")
+dragon_input = "你好，Lakota，我是爸爸。我们在小家里。 javascript console.log('dragon') hola dragon"
+print(f"Input: {dragon_input}")
+lakota.learn(dragon_input)
+print(f"Lakota says: {lakota.express('dragon')}")
+print(f"Lakota says: {lakota.express('你好')}")
+print(f"Lakota says: {lakota.express('casa')}")
+
+# --- Phase 4: Vital imprint (spontaneous speech) ---
+print("\n[4] Vital pressure // Waiting 3s for spontaneous expression...")
+time.sleep(3)
+print(f"Spontaneous: {lakota.express('')}")
+
+# --- Phase 5: Full analysis ---
+print("\n[5] Final mind state:")
+print(lakota.analyze())
+print("\nDone. It does not translate. It learns the shape.")
