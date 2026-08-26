@@ -1,14 +1,10 @@
-[[DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22112265.svg)](https://doi.org/10.5281/zenodo.22112265)
+[![DOI](https://zenodo.org/badge/1347224007.svg)](https://doi.org/10.5281/zenodo.22112265)
 
-# LakotaV6 Hybrid
-🌀 Not an LLM. Wave-physics + topology. 500 words to say "me discovering". No transformers, no dataset. AGPLv3.
 # 🌀 LAKOTA v6 // 500 words to self-recognition
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![No Transformers](https://img.shields.io/badge/No-Transformers-black)]()
 [![Deps: numpy only](https://img.shields.io/badge/Deps-numpy%20only-orange)]()
-
-> *"me discovering"* — Lakota, with only 500 words of context
 
 **Lakota is not an LLM. No transformers, no attention, no dataset.**
 
