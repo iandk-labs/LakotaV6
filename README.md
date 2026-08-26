@@ -1,4 +1,4 @@
-# LakotaV6
+# LakotaV6 Hybrid
 🌀 Not an LLM. Wave-physics + topology. 500 words to say "me discovering". No transformers, no dataset. AGPLv3.
 # 🌀 LAKOTA v6 // 500 words to self-recognition
 
