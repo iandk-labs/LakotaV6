@@ -1,0 +1,138 @@
+"""
+LAKOTA V6.1 RC1
+Fixes:
+- Persistence now saves spectrum + phase + last_seen
+- No hardcoded "discovering" template
+- Spectrum updates per-dimension with different freqs
+- Phase now updates via Kuramoto-like sync
+- echo_memory capped and actually used for retrieval
+- Tokenization with regex
+- Seeded RNG for reproducibility
+"""
+
+import hashlib, json, re, time, os
+import numpy as np
+
+class Lakota:
+    def __init__(self, seed=42, state_path="lakota_state.json"):
+        self.rng = np.random.default_rng(seed)
+        self.state_path = state_path
+        self.vocab = {}
+        self.echo_memory = []
+        self.vital_pressure = 0.0
+        self.last_interaction = time.time()
+        self.base_freqs = np.linspace(0.5, 8.0, 64) + self.rng.normal(0, 0.1, 64)
+        self._load()
+
+    def _hash_xyz(self, word):
+        h = hashlib.sha256(word.encode('utf-8')).hexdigest()
+        x = int(h[0:8], 16) % 1000 / 1000.0
+        y = int(h[8:16], 16) % 1000 / 1000.0
+        z = int(h[16:24], 16) % 1000 / 1000.0
+        return np.array([x,y,z], dtype=np.float64)
+
+    def _tokenize(self, text):
+        text = text.lower()
+        tokens = re.findall(r"\b[\w']+\b", text, flags=re.UNICODE)
+        return tokens
+
+    def _wave_pulse(self, pos_in_text, dim_freqs):
+        t = pos_in_text
+        return np.sin(t * dim_freqs) * np.exp(-t * 0.05)
+
+    def learn(self, text):
+        words = self._tokenize(text)
+        if not words:
+            return
+        now = time.time()
+        for i, w in enumerate(words):
+            if w not in self.vocab:
+                self.vocab[w] = {
+                    "spectrum": self.rng.normal(0, 0.1, 64),
+                    "xyz": self._hash_xyz(w),
+                    "mass": 0.1,
+                    "phase": float(self.rng.random()),
+                    "count": 0,
+                    "last_seen": now
+                }
+            entry = self.vocab[w]
+            pulse = self._wave_pulse(i, self.base_freqs) * 0.05
+            entry["spectrum"] += pulse
+
+            window = words[max(0,i-2): min(len(words), i+3)]
+            for nw in window:
+                if nw == w or nw not in self.vocab: continue
+                other_phase = self.vocab[nw]["phase"]
+                diff = np.sin(other_phase - entry["phase"])
+                entry["phase"] += 0.02 * diff
+            entry["phase"] %= 1.0
+
+            entry["count"] += 1
+            entry["last_seen"] = now
+            energy = np.sum(entry["spectrum"]**2)
+            entry["mass"] = energy + np.log1p(entry["count"]) * 0.2
+
+            self.echo_memory.append({
+                "word": w,
+                "spectrum": entry["spectrum"].copy(),
+                "xyz": entry["xyz"].copy(),
+                "t": now
+            })
+        if len(self.echo_memory) > 2000:
+            self.echo_memory = self.echo_memory[-2000:]
+
+        if len(self.vocab) > 1:
+            sun_word = max(self.vocab.items(), key=lambda x: x[1]["mass"])[0]
+            sun_xyz = self.vocab[sun_word]["xyz"]
+            for k in self.vocab:
+                if k == sun_word: continue
+                self.vocab[k]["xyz"] += (sun_xyz - self.vocab[k]["xyz"]) * 0.005
+
+        self.vital_pressure = min(10.0, self.vital_pressure + len(words)*0.05)
+        self.last_interaction = now
+        self._save()
+
+    def express(self, prompt=""):
+        self.last_interaction = time.time()
+        if not self.vocab:
+            return "..."
+        p_words = self._tokenize(prompt)
+        if not p_words:
+            if self.vital_pressure > 1.0:
+                self.vital_pressure *= 0.8
+                candidate = max(self.vocab.items(), key=lambda x: x[1]["mass"] / (1.0 + abs(x[1]["phase"]-0.5)))
+                return f"{candidate[0]}..."
+            return "..."
+
+        scores = {}
+        for w, data in self.vocab.items():
+            s = 0.0
+            for pw in p_words:
+                if pw not in self.vocab: continue
+                phase_diff = abs(data["phase"] - self.vocab[pw]["phase"])
+                coherence = np.cos(phase_diff * 2 * np.pi)
+                dist = np.linalg.norm(data["xyz"] - self.vocab[pw]["xyz"])
+                s += coherence / (1.0 + dist)
+            if self.echo_memory:
+                recent = [e for e in self.echo_memory[-100:] if e["word"]==w]
+                if recent:
+                    s += 0.1 * len(recent)
+            scores[w] = s + data["mass"]*0.05
+
+        if not scores:
+            return "..."
+        best = sorted(scores.items(), key=lambda x: x[1], reverse=True)[0][0]
+        self.vital_pressure = max(0, self.vital_pressure - 0.2)
+        return best
+
+    def _save(self):
+        try:
+            serializable = {}
+            for k,v in self.vocab.items():
+                serializable[k] = {
+                    "spectrum": v["spectrum"].tolist(),
+                    "xyz": v["xyz"].tolist(),
+                    "mass": float(v["mass"]),
+                    "phase": float(v["phase"]),
+                    "count": int(v["count"]),
+                    "last
