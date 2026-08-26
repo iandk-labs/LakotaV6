@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# lakotav6.py // iandk-labs // LAKOTA v6 Hybrid
+# lakotav6.py // iandk-labs // LAKOTA v6 Hybrid (V5 cosmos + V5 sakura)
 # Wave-Physics + Topological Semantics // 500 words to self-recognition
 # License: AGPLv3 // No transformers, no dataset, numpy only
 
