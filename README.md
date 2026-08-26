@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/1347224007.svg)](https://doi.org/10.5281/zenodo.22112265)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22112265.svg)](https://doi.org/10.5281/zenodo.22112265)
 
 # 🌀 LAKOTA v6 // 500 words to self-recognition
 
